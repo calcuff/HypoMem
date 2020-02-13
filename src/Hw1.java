@@ -18,6 +18,7 @@ public class Hw1 {
     private static long[] GPR = new long[8];
     private static long IR, PSR, PC, SP;
 
+    private static long Op1Address, Op1Value, Op2Address, Op2Value;
 
     private static final int ValidProgramArea = 3499;
     private final static int OK = 0;
@@ -428,5 +429,80 @@ public class Hw1 {
         } // End of while loop
         return status;
     } // End of CPU()
+
+    private static long FetchOperand(long OpMode, long OpReg, long OpAddress, long OpValue){
+
+        switch ((int)OpMode){
+            case 1: //REGISTER MODE
+                OpAddress = -1;
+                OpValue = GPR[(int)OpReg];
+                break;
+
+            case 2: //REGISTER DEFERRED MODE
+                OpAddress = GPR[(int)OpReg];
+                // TODO: Push these into static vars at top for user free space
+                if ( OpAddress >= 0 && OpAddress <= ValidProgramArea){
+                    OpValue = HypoMem[(int)OpAddress];
+                }
+                else{
+                    System.out.println("ERROR: Invalid address range. ");
+                    return InvalidGPRAddr;
+                }
+                break;
+
+            case 3: //AUTOINCREMENT MODE
+                OpAddress = GPR[(int)OpReg];
+                if ( OpAddress >= 0 && OpAddress <= ValidProgramArea){
+                    OpValue = HypoMem[(int)OpAddress];
+                }
+                else{
+                    System.out.println("ERROR: Invalid address range. ");
+                    return InvalidGPRAddr;
+                }
+                GPR[(int)OpReg]++;
+                break;
+
+            case 4: //AUTO-DECREMENT MODE
+                --GPR[(int)OpReg];
+                OpAddress = GPR[(int)OpReg];
+
+                if ( OpAddress >= 0 && OpAddress <= ValidProgramArea){
+                    OpValue = HypoMem[(int)OpAddress];
+                }
+                else{
+                    System.out.println("ERROR: Invalid address range. ");
+                    return InvalidGPRAddr;
+                }
+                break;
+
+            case 5: //DIRECT MODE
+                OpAddress = HypoMem[(int)PC++];
+
+                if ( OpAddress >= 0 && OpAddress <= ValidProgramArea){
+                    OpValue = HypoMem[(int)OpAddress];
+                }
+                else{
+                    System.out.println("ERROR: Invalid address range. ");
+                    return InvalidGPRAddr;
+                }
+                break;
+
+            case 6: //IMMEDIATE MODE
+                if (PC >= 0 && PC <= ValidProgramArea){
+                    OpAddress = -1;
+                    OpValue = HypoMem[(int)PC++];
+                }
+                else{
+                    System.out.println("ERROR: Invalid PC value. ");
+                    return InvalidPCValue;
+                }
+                break;
+
+            default: // INVALID MODE
+                System.out.println("ERROR: Invalid mode, returning error");
+                return InvalidMode;
+        } // End of switch OpMode
+        return OK;
+    } // End of FetchOperand()
 
 }
