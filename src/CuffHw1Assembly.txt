@@ -1,0 +1,34 @@
+// Assembly language program to add all the even numbers from 2 to 100 and store the result in memory.
+// Then perform the following calculation:
+	Temp =  (550 – EvenSum) / 100 * 5
+	If (Temp < 0)
+		Final = 1;
+	Else
+		Final = 2;
+
+
+Label	    Mnemonic	Operands	    Description
+main	    Function			        Start of main function
+EvenSum	    Long		0		        Declare variable EvenSum and initialize it to 0
+Val         Long        100             Declare variable Val and initialize it to 100
+Temp        Long        550             Declare variable Temp and initialize it to 550
+Final       Long        0               Declare variable Final and initialize it to 0
+Start	    Move		R2,0		    Initialize R2 to 0
+Loop        Add         R2,Val          R2 = R2+Val
+            Subtract    Val,2           Val = Val -2
+            BrOnPlus    Val,Loop        If Val > 0, jump to Loop
+            Move        EvenSum,R2      EvenSum=R2
+
+                                        Temp =  (550 – EvenSum) / 100 * 5
+            Subtract    Temp,EvenSum    Temp = Temp-EvenSum
+            Divide      Temp,100        Temp = Temp/100
+            Multiply    Temp,5          Temp = Temp * 5
+            BrOnMinus   Temp,Neg        If Temp < 0, jump to Neg
+            Move        Final,2         Final = 2
+            Branch      Both            jump to Both
+Neg
+            Move        Final,1         Neg: Final=1
+Both
+            Halt                        Stop execution of the program
+            End         Start
+
