@@ -6,7 +6,6 @@ HW1
 2/11/20
  */
 
-// TODO: ints vs long ? Return type as int, variables listed as long
 import java.io.File;
 import java.util.Scanner;
 
@@ -193,6 +192,7 @@ public class Hw1 {
                 case 0: //HALT
                     halt = true;
                     System.out.println("Halt instruction was encountered.");
+                    clock = clock + 12;
                     break;
 
 
@@ -228,7 +228,7 @@ public class Hw1 {
                         HypoMem[(int)Op1Address] = Result;
                     }
 
-                    //TODO: Increment clock by Add instruction execution time
+                    clock = clock + 4;
                     break;
 
                 case 2: //Subtract
@@ -263,7 +263,7 @@ public class Hw1 {
                         HypoMem[(int)Op1Address] = Result;
                     }
 
-                    //TODO: Increment clock by Add instruction execution time
+                    clock = clock + 4;
                     break;
 
                 case 3: // MULTIPLY
@@ -298,7 +298,7 @@ public class Hw1 {
                         HypoMem[(int)Op1Address] = Result;
                     }
 
-                    //TODO: Increment clock by Add instruction execution time
+                    clock = clock + 6;
                     break;
 
                 case 4: // DIVIDE
@@ -319,7 +319,7 @@ public class Hw1 {
 
                     //Check for division by 0 before
                     if ( Op2Value == 0){
-                        System.out.println("ERRPR: Division by 0 is a fatal run-time error.");
+                        System.out.println("ERROR: Division by 0 is a fatal run-time error.");
                         return DivideBy0Error;
                     }
                     // Divide the operand values
@@ -338,7 +338,7 @@ public class Hw1 {
                         HypoMem[(int)Op1Address] = Result;
                     }
 
-                    //TODO: Increment clock by Add instruction execution time
+                    clock = clock + 6;
                     break;
 
                 case 5: // MOVE
@@ -373,7 +373,7 @@ public class Hw1 {
                         HypoMem[(int)Op1Address] = Result;
                     }
 
-                    //TODO: Increment clock by Add instruction execution time
+                    clock = clock + 2;
                     break;
 
                 case 6: //BRANCH
@@ -383,7 +383,7 @@ public class Hw1 {
                         System.out.println("Error: Invalid PC range found");
                         return InvalidPCValue;
                     }
-                    //TODO: Increment clock by Add instruction execution time
+                    clock = clock + 2;
                     break;
 
                 case 7: //BrOnMinus
@@ -407,7 +407,8 @@ public class Hw1 {
                     else{
                         PC++; // Skip branch address to go to next instruction
                     }
-                    //TODO: Increment clock by Add instruction execution time
+
+                    clock = clock + 4;
                     break;
 
                 case 8: // BrOnPlus
@@ -430,7 +431,8 @@ public class Hw1 {
                     else{
                         PC++; // Skip branch address to go to next instruction
                     }
-                    //TODO: Increment clock by Add instruction execution time
+
+                    clock = clock + 4;
                     break;
 
                 case 9: //BrOnZero
@@ -453,7 +455,8 @@ public class Hw1 {
                     else{
                         PC++; // Skip branch address to go to next instruction
                     }
-                    //TODO: Increment clock by Add instruction execution time
+
+                    clock = clock + 4;
                     break;
 
                 case 10: // PUSH
@@ -489,7 +492,6 @@ public class Hw1 {
 
             case 2: //REGISTER DEFERRED MODE
                 returnValue[OpAddress] = GPR[(int)OpReg];
-                // TODO: Push these into static vars at top for user free space
                 if ( returnValue[OpAddress] >= 0 && returnValue[OpAddress] <= ValidProgramArea){
                     returnValue[OpValue] = HypoMem[(int)returnValue[OpAddress]];
                 }
@@ -596,7 +598,7 @@ public class Hw1 {
                 }
                 System.out.println();
             }
-            System.out.print("CLock: " + clock + "\nPSR: " + PSR);
+            System.out.println("Clock: " + clock + "\nPSR: " + PSR);
         }
     } //End of DumpMemory()
 
