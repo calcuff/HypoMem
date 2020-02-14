@@ -1,0 +1,57 @@
+// Translation of the Assembly language code into machine language program with comments for readability
+
+Address     Content     Comment
+0           0           EvenSum long 0
+1           100         Val long 100
+2           550         Temp long 550
+3           0           Final long 0
+4           51260       Start Move R2,0
+5           0           Immediate Op Value 0
+6           11250       Loop: Add R2,Val
+7           1           Address of Val
+8           25060       Subtract Val,2
+9           1           Address of Val
+10          2           Immediate op value of 2
+11          85000       BrOnPlus Val,Loop
+12          1           Address of Val
+13          6           Address of Loop
+14          55012       Move EvenSum,R2
+15          0           Address of EvenSum
+16          25050       Subtract Temp,EvenSum
+17          2           Address of Temp
+18          0           Address of EvenSum
+19          45060       Divide Temp,100
+20          2           Address of Temp
+21          100         Immediate Op value of 100
+22          35060       Multiply Temp,5
+23          2           Address of Temp
+24          5           Immediate op value of 5
+25          75000       BrOnMinus Temp,Neg
+26          2           Address of Temp
+27          33          Address of Neg
+28          55060       Move Final,2
+29          3           Address of Final
+30          2           Immediate Op value of 2
+31          60000       Branch to Both
+32          36          Address of Both
+33          55060       Neg: Move Final,1
+34          3           Address of Final
+35          1           Immediate Op value of 1
+36          0           Both: Halt
+-1          4           End of Program, PC = 4
+
+
+
+
+
+Symbol Table
+Variable    Address
+main        0
+EvenSum     0
+Val         1
+Temp        2
+Final       3
+Start       4
+Loop        6
+Neg         33
+Both        36
