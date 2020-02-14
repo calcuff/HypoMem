@@ -18,7 +18,7 @@ public class Hw1 {
     private static long[] GPR = new long[8];
     private static long IR, PSR, PC, SP;
 
-    private static long Op1Address, Op1Value, Op2Address, Op2Value;
+    public static long  Op1Address, Op1Value, Op2Address, Op2Value;
 
     private static final int ValidProgramArea = 3499;
     private final static int OK = 0;
@@ -37,6 +37,7 @@ public class Hw1 {
 
     public static void main(String[] args) throws Exception{
 
+        Hw1 Mem = new Hw1();
         InitializeSystem();
 
         Scanner in = new Scanner(System.in);
@@ -119,9 +120,16 @@ public class Hw1 {
 
     public static long CPU(){
         long Opcode, Remainder, Op1Mode, Op1Gpr, Op2Mode, Op2Gpr;
-        long status = 0, Result;
+        long Returned[] = new long[3];
+        long Result;
         boolean halt = false;
         boolean error = false;
+
+        int err = 0;
+        int OpAddr = 1;
+        int OpVal = 2;
+
+
         while ( !halt && !error){
             if (PC >= 0 && PC <= ValidProgramArea){
                 MAR = PC++;
@@ -175,17 +183,20 @@ public class Hw1 {
 
 
                 case 1: //ADD
-                    status = FetchOperand(Op1Mode, Op1Gpr, Op1Address, Op1Value);
+                    Returned = FetchOperand(Op1Mode, Op1Gpr);
                     // check for error and return error code
-                    if ( status < 0){
-                        return status;
+                    if ( Returned[err] < 0){
+                        return Returned[err];
                     }
+                    Op1Address = Returned[OpAddr];
+                    Op1Value = Returned[OpVal];
 
-                    status = FetchOperand(Op2Mode, Op2Gpr, Op2Address, Op2Value);
-                    // check for error and return error code;
-                    if ( status < 0){
-                        return status;
+                    Returned = FetchOperand(Op2Mode, Op2Gpr);
+                    if ( Returned[err] < 0){
+                        return Returned[err];
                     }
+                    Op2Address = Returned[OpAddr];
+                    Op2Value = Returned[OpVal];
 
                     // Add the operand values
                     Result = Op1Value + Op2Value;
@@ -207,19 +218,22 @@ public class Hw1 {
                     break;
 
                 case 2: //Subtract
-                    status = FetchOperand(Op1Mode, Op1Gpr, Op1Address, Op1Value);
+                    Returned = FetchOperand(Op1Mode, Op1Gpr);
                     // check for error and return error code
-                    if ( status < 0){
-                        return status;
+                    if ( Returned[err] < 0){
+                        return Returned[err];
                     }
+                    Op1Address = Returned[OpAddr];
+                    Op1Value = Returned[OpVal];
 
-                    status = FetchOperand(Op2Mode, Op2Gpr, Op2Address, Op2Value);
-                    // check for error and return error code;
-                    if ( status < 0){
-                        return status;
+                    Returned = FetchOperand(Op2Mode, Op2Gpr);
+                    if ( Returned[err] < 0){
+                        return Returned[err];
                     }
+                    Op2Address = Returned[OpAddr];
+                    Op2Value = Returned[OpVal];
 
-                    // Add the operand values
+                    // Subtract the operand values
                     Result = Op1Value - Op2Value;
 
                     // If OpMode is Register mode
@@ -239,19 +253,22 @@ public class Hw1 {
                     break;
 
                 case 3: // MULTIPLY
-                    status = FetchOperand(Op1Mode, Op1Gpr, Op1Address, Op1Value);
+                    Returned = FetchOperand(Op1Mode, Op1Gpr);
                     // check for error and return error code
-                    if ( status < 0){
-                        return status;
+                    if ( Returned[err] < 0){
+                        return Returned[err];
                     }
+                    Op1Address = Returned[OpAddr];
+                    Op1Value = Returned[OpVal];
 
-                    status = FetchOperand(Op2Mode, Op2Gpr, Op2Address, Op2Value);
-                    // check for error and return error code;
-                    if ( status < 0){
-                        return status;
+                    Returned = FetchOperand(Op2Mode, Op2Gpr);
+                    if ( Returned[err] < 0){
+                        return Returned[err];
                     }
+                    Op2Address = Returned[OpAddr];
+                    Op2Value = Returned[OpVal];
 
-                    // Add the operand values
+                    // Multiply the operand values
                     Result = Op1Value * Op2Value;
 
                     // If OpMode is Register mode
@@ -271,24 +288,27 @@ public class Hw1 {
                     break;
 
                 case 4: // DIVIDE
-                    status = FetchOperand(Op1Mode, Op1Gpr, Op1Address, Op1Value);
+                    Returned = FetchOperand(Op1Mode, Op1Gpr);
                     // check for error and return error code
-                    if ( status < 0){
-                        return status;
+                    if ( Returned[err] < 0){
+                        return Returned[err];
                     }
+                    Op1Address = Returned[OpAddr];
+                    Op1Value = Returned[OpVal];
 
-                    status = FetchOperand(Op2Mode, Op2Gpr, Op2Address, Op2Value);
-                    // check for error and return error code;
-                    if ( status < 0){
-                        return status;
+                    Returned = FetchOperand(Op2Mode, Op2Gpr);
+                    if ( Returned[err] < 0){
+                        return Returned[err];
                     }
+                    Op2Address = Returned[OpAddr];
+                    Op2Value = Returned[OpVal];
 
                     //Check for division by 0 before
                     if ( Op2Value == 0){
                         System.out.println("ERRPR: Division by 0 is a fatal run-time error.");
                         return DivideBy0Error;
                     }
-                    // Add the operand values
+                    // Divide the operand values
                     Result = Op1Value / Op2Value;
 
                     // If OpMode is Register mode
@@ -308,17 +328,20 @@ public class Hw1 {
                     break;
 
                 case 5: // MOVE
-                    status = FetchOperand(Op1Mode, Op1Gpr, Op1Address, Op1Value);
+                    Returned = FetchOperand(Op1Mode, Op1Gpr);
                     // check for error and return error code
-                    if ( status < 0){
-                        return status;
+                    if ( Returned[err] < 0){
+                        return Returned[err];
                     }
+                    Op1Address = Returned[OpAddr];
+                    Op1Value = Returned[OpVal];
 
-                    status = FetchOperand(Op2Mode, Op2Gpr, Op2Address, Op2Value);
-                    // check for error and return error code;
-                    if ( status < 0){
-                        return status;
+                    Returned = FetchOperand(Op2Mode, Op2Gpr);
+                    if ( Returned[err] < 0){
+                        return Returned[err];
                     }
+                    Op2Address = Returned[OpAddr];
+                    Op2Value = Returned[OpVal];
 
                     // Add the operand values
                     Result = Op2Value;
@@ -350,11 +373,14 @@ public class Hw1 {
                     break;
 
                 case 7: //BrOnMinus
-                    status = FetchOperand(Op1Mode, Op1Gpr, Op1Address, Op1Value);
+                    Returned = FetchOperand(Op1Mode, Op1Gpr);
                     // check for error and return error code
-                    if ( status < 0){
-                        return status;
+                    if ( Returned[err] < 0){
+                        return Returned[err];
                     }
+                    Op1Address = Returned[OpAddr];
+                    Op1Value = Returned[OpVal];
+
 
                     if (Op1Value < 0){
                         if ( PC >= 0 && PC <= ValidProgramArea)
@@ -371,11 +397,13 @@ public class Hw1 {
                     break;
 
                 case 8: // BrOnPlus
-                    status = FetchOperand(Op1Mode, Op1Gpr, Op1Address, Op1Value);
+                    Returned = FetchOperand(Op1Mode, Op1Gpr);
                     // check for error and return error code
-                    if ( status < 0){
-                        return status;
+                    if ( Returned[err] < 0){
+                        return Returned[err];
                     }
+                    Op1Address = Returned[OpAddr];
+                    Op1Value = Returned[OpVal];
 
                     if (Op1Value > 0){
                         if ( PC >= 0 && PC <= ValidProgramArea)
@@ -392,11 +420,13 @@ public class Hw1 {
                     break;
 
                 case 9: //BrOnZero
-                    status = FetchOperand(Op1Mode, Op1Gpr, Op1Address, Op1Value);
+                    Returned = FetchOperand(Op1Mode, Op1Gpr);
                     // check for error and return error code
-                    if ( status < 0){
-                        return status;
+                    if ( Returned[err] < 0){
+                        return Returned[err];
                     }
+                    Op1Address = Returned[OpAddr];
+                    Op1Value = Returned[OpVal];
 
                     if (Op1Value == 0){
                         if ( PC >= 0 && PC <= ValidProgramArea)
@@ -427,82 +457,87 @@ public class Hw1 {
 
             } // End of switch statement
         } // End of while loop
-        return status;
+        return OK;
     } // End of CPU()
 
-    private static long FetchOperand(long OpMode, long OpReg, long OpAddress, long OpValue){
+    private static long[] FetchOperand(long OpMode, long OpReg){
+
+        long returnValue[] = new long[3];
+        int Error = 0;
+        int OpAddress = 1;
+        int OpValue  =2;
 
         switch ((int)OpMode){
             case 1: //REGISTER MODE
-                OpAddress = -1;
-                OpValue = GPR[(int)OpReg];
+                returnValue[OpAddress] = -1;
+                returnValue[OpValue] = GPR[(int)OpReg];
                 break;
 
             case 2: //REGISTER DEFERRED MODE
-                OpAddress = GPR[(int)OpReg];
+                returnValue[OpAddress] = GPR[(int)OpReg];
                 // TODO: Push these into static vars at top for user free space
                 if ( OpAddress >= 0 && OpAddress <= ValidProgramArea){
-                    OpValue = HypoMem[(int)OpAddress];
+                    returnValue[OpValue] = HypoMem[(int)OpAddress];
                 }
                 else{
                     System.out.println("ERROR: Invalid address range. ");
-                    return InvalidGPRAddr;
+                    returnValue[Error] =  InvalidGPRAddr;
                 }
                 break;
 
             case 3: //AUTOINCREMENT MODE
-                OpAddress = GPR[(int)OpReg];
+                returnValue[OpAddress] = GPR[(int)OpReg];
                 if ( OpAddress >= 0 && OpAddress <= ValidProgramArea){
-                    OpValue = HypoMem[(int)OpAddress];
+                    returnValue[OpValue] = HypoMem[(int)OpAddress];
                 }
                 else{
                     System.out.println("ERROR: Invalid address range. ");
-                    return InvalidGPRAddr;
+                    returnValue[Error] = InvalidGPRAddr;
                 }
                 GPR[(int)OpReg]++;
                 break;
 
             case 4: //AUTO-DECREMENT MODE
                 --GPR[(int)OpReg];
-                OpAddress = GPR[(int)OpReg];
+                returnValue[OpAddress] = GPR[(int)OpReg];
 
                 if ( OpAddress >= 0 && OpAddress <= ValidProgramArea){
-                    OpValue = HypoMem[(int)OpAddress];
+                    returnValue[OpValue] = HypoMem[(int)OpAddress];
                 }
                 else{
                     System.out.println("ERROR: Invalid address range. ");
-                    return InvalidGPRAddr;
+                    returnValue[Error] =  InvalidGPRAddr;
                 }
                 break;
 
             case 5: //DIRECT MODE
-                OpAddress = HypoMem[(int)PC++];
+                returnValue[OpAddress] = HypoMem[(int)PC++];
 
                 if ( OpAddress >= 0 && OpAddress <= ValidProgramArea){
-                    OpValue = HypoMem[(int)OpAddress];
+                    returnValue[OpValue] = HypoMem[(int)OpAddress];
                 }
                 else{
                     System.out.println("ERROR: Invalid address range. ");
-                    return InvalidGPRAddr;
+                    returnValue[Error] = InvalidGPRAddr;
                 }
                 break;
 
             case 6: //IMMEDIATE MODE
                 if (PC >= 0 && PC <= ValidProgramArea){
-                    OpAddress = -1;
-                    OpValue = HypoMem[(int)PC++];
+                    returnValue[OpAddress] = -1;
+                    returnValue[OpValue] = HypoMem[(int)PC++];
                 }
                 else{
                     System.out.println("ERROR: Invalid PC value. ");
-                    return InvalidPCValue;
+                    returnValue[Error] =  InvalidPCValue;
                 }
                 break;
 
             default: // INVALID MODE
                 System.out.println("ERROR: Invalid mode, returning error");
-                return InvalidMode;
+                returnValue[Error] = InvalidMode;
         } // End of switch OpMode
-        return OK;
+        return returnValue;
     } // End of FetchOperand()
 
 }
