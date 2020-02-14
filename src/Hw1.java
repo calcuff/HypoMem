@@ -21,8 +21,12 @@ public class Hw1 {
     public static long  Op1Address, Op1Value, Op2Address, Op2Value;
 
     private static final int ValidProgramArea = 3499;
+    private static final int MaxMemory = 9999;
     private final static int OK = 0;
     private final static long ENDOFPROGRAM = -1;
+    private final static int FileNotFoundError = -2;
+    private final static int NoEndProgError = -3;
+    private final static int InvalidAddrRange = -4;
     private final static int HaltStatus = -5;
     private final static int InvalidPCValue = -6;
     private final static int InvalidOpMode = -7;
@@ -36,33 +40,39 @@ public class Hw1 {
 
 
     public static void main(String[] args) throws Exception{
-
-        Hw1 Mem = new Hw1();
+        // Initialize all components to 0
         InitializeSystem();
 
+        //Dump memory after loading user program: Range 0 to 99 locations
+        DumpMemory("Memory after initializing", 0, 99);
+
+        // Prompt user for filename
         Scanner in = new Scanner(System.in);
-
         System.out.println("Enter the filename of machine language executable");
-
         String machineFile = in.nextLine();
 
+        // Load the specified file
         long returnValue = AbsoluteLoader("C:\\Users\\calcu\\OSI\\src\\" + machineFile);
-        //TODO: Check for error and return code
+        if (returnValue < 0){
+            System.out.println("There was an error loading file, returning error");
+        }
 
         PC = returnValue;
-        System.out.println(PC);
 
-        //Dump memory after loading user program: Range 0 to 99 locations
-
-        //ExecuteProgram()
+        // Execute the program and check for error
         long ExecutionCompletionStatus = CPU();
+        if (ExecutionCompletionStatus < 0){
+            System.out.println("There was an error executing the CPU()");
+        }
 
         //Dump memory after executing user program: Range 0 to 99 locations
+        DumpMemory("Memory after Executing program", 0, 99);
+
 
 
     } // End of main
 
-    public static void InitializeSystem(){
+    private static void InitializeSystem(){
         //(1)
         for(int i =0 ; i < HypoMem.length; i++){
             HypoMem[i] = 0;
@@ -87,15 +97,17 @@ public class Hw1 {
 
     } // End of InitializeSystem()
 
-    public static int AbsoluteLoader(String filename) throws Exception {
+    private static int AbsoluteLoader(String filename) throws Exception {
 
         int Address;
         int Content;
+
         File file = new File(filename);
         if (!file.exists()) {
             System.out.println("File does not exist");
-            return -99; //TODO: Fix error check
+            return FileNotFoundError;
         }
+
         Scanner in = new Scanner(file);
 
         while (in.hasNextLine()) {
@@ -105,20 +117,22 @@ public class Hw1 {
                 System.out.println("Reached end of program");
                 in.close();
                 return Content;  // Value to be stored in PC main
-            } else if (Address >= 0 && Address < 10000) { //TODO: Is this range accurate, off by 1
+            }
+            else if (Address >= 0 && Address < MaxMemory) {
                 HypoMem[Address] = Content;
-            } else {
-                System.out.println("There was an unexpected error that should not have happened"); //Get approp error
+            }
+            else {
+                System.out.println("There was an unexpected error, address out of range");
                 in.close();
-                return -77; //TODO Get right error code
+                return InvalidAddrRange;
             }
         } //end of while loop
         System.out.println("End of file encountered without End of Program line");
         in.close();
-        return -96; //TODO: Get right error code
+        return NoEndProgError;
     } //End of Absolute Loader
 
-    public static long CPU(){
+    private static long CPU(){
         long Opcode, Remainder, Op1Mode, Op1Gpr, Op2Mode, Op2Gpr;
         long Returned[] = new long[3];
         long Result;
@@ -179,7 +193,7 @@ public class Hw1 {
                 case 0: //HALT
                     halt = true;
                     System.out.println("Halt instruction was encountered.");
-                    return HaltStatus;
+                    break;
 
 
                 case 1: //ADD
@@ -476,8 +490,8 @@ public class Hw1 {
             case 2: //REGISTER DEFERRED MODE
                 returnValue[OpAddress] = GPR[(int)OpReg];
                 // TODO: Push these into static vars at top for user free space
-                if ( OpAddress >= 0 && OpAddress <= ValidProgramArea){
-                    returnValue[OpValue] = HypoMem[(int)OpAddress];
+                if ( returnValue[OpAddress] >= 0 && returnValue[OpAddress] <= ValidProgramArea){
+                    returnValue[OpValue] = HypoMem[(int)returnValue[OpAddress]];
                 }
                 else{
                     System.out.println("ERROR: Invalid address range. ");
@@ -487,8 +501,8 @@ public class Hw1 {
 
             case 3: //AUTOINCREMENT MODE
                 returnValue[OpAddress] = GPR[(int)OpReg];
-                if ( OpAddress >= 0 && OpAddress <= ValidProgramArea){
-                    returnValue[OpValue] = HypoMem[(int)OpAddress];
+                if ( returnValue[OpAddress] >= 0 && returnValue[OpAddress] <= ValidProgramArea){
+                    returnValue[OpValue] = HypoMem[(int)returnValue[OpAddress]];
                 }
                 else{
                     System.out.println("ERROR: Invalid address range. ");
@@ -501,8 +515,8 @@ public class Hw1 {
                 --GPR[(int)OpReg];
                 returnValue[OpAddress] = GPR[(int)OpReg];
 
-                if ( OpAddress >= 0 && OpAddress <= ValidProgramArea){
-                    returnValue[OpValue] = HypoMem[(int)OpAddress];
+                if ( returnValue[OpAddress] >= 0 && returnValue[OpAddress] <= ValidProgramArea){
+                    returnValue[OpValue] = HypoMem[(int)returnValue[OpAddress]];
                 }
                 else{
                     System.out.println("ERROR: Invalid address range. ");
@@ -513,8 +527,8 @@ public class Hw1 {
             case 5: //DIRECT MODE
                 returnValue[OpAddress] = HypoMem[(int)PC++];
 
-                if ( OpAddress >= 0 && OpAddress <= ValidProgramArea){
-                    returnValue[OpValue] = HypoMem[(int)OpAddress];
+                if ( returnValue[OpAddress] >= 0 && returnValue[OpAddress] <= ValidProgramArea){
+                    returnValue[OpValue] = HypoMem[(int)returnValue[OpAddress]];
                 }
                 else{
                     System.out.println("ERROR: Invalid address range. ");
@@ -539,5 +553,56 @@ public class Hw1 {
         } // End of switch OpMode
         return returnValue;
     } // End of FetchOperand()
+
+    private static void DumpMemory(String word, long startAddress, long size){
+        System.out.println(word);
+
+        if ( startAddress < 0 || startAddress > MaxMemory || startAddress+size > MaxMemory)
+            System.out.println("ERROR: There was an invalid start address, size, or end address.");
+
+        else{
+            System.out.print("GPRS:");
+            for(int i = 0; i < 10; i++){
+                print("G"+i);
+            }
+
+            System.out.print("\n\t");
+            for(int i = 0; i < 8; i++){
+                print(Long.toString(GPR[i]));
+            }
+            print(Long.toString(SP));
+            print(Long.toString(PC));
+            System.out.println();
+
+            System.out.print("Address: +0\t\t+1");
+            for(int i = 2; i < 10; i++){
+                print("+"+i);
+            }
+            System.out.println();
+
+            long addr = startAddress;
+            long endAddr = startAddress+size;
+
+            while(addr < endAddr){
+                System.out.print(addr+"\t");
+                for ( int i = 0; i < 10; i++){
+                    if ( addr < endAddr) {
+                        String formatted = String.format("%7s", HypoMem[(int) addr]);
+                        System.out.print(formatted);
+                        addr++;
+                    }
+                    else
+                        break;
+                }
+                System.out.println();
+            }
+            System.out.print("CLock: " + clock + "\nPSR: " + PSR);
+        }
+    } //End of DumpMemory()
+
+    public static void print(String out){
+        String formatted = String.format("%7s", out);
+        System.out.print(formatted);
+    }
 
 }
