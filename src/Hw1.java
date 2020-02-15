@@ -6,21 +6,29 @@ HW1
 2/11/20
  */
 
+//TODO: Documentation
+//Valid Memory Area
 import java.io.File;
 import java.util.Scanner;
 
 public class Hw1 {
 
+    // List of all global variables for hardware components
     private static long[] HypoMem = new long[10000];
     private static long MAR, MBR;
     private static long clock;
     private static long[] GPR = new long[8];
     private static long IR, PSR, PC, SP;
+    private static long  Op1Address, Op1Value, Op2Address, Op2Value;
 
-    public static long  Op1Address, Op1Value, Op2Address, Op2Value;
+    // Variables for valid memory area addressing
+    private final static int StackStartAddr = 1000;
+    private final static int StackEndAddr = 1199;
+    private final static int StackSize = 200;
+    private final static int ValidProgramArea = 3499;
+    private final static int MaxMemory = 9999;
 
-    private static final int ValidProgramArea = 3499;
-    private static final int MaxMemory = 9999;
+    // List of return status codes
     private final static int OK = 0;
     private final static long ENDOFPROGRAM = -1;
     private final static int FileNotFoundError = -2;
@@ -35,17 +43,16 @@ public class Hw1 {
     private final static int InvalidOpCode = -11;
     private final static int InvalidGPRAddr = -12;
     private final static int InvalidMode = -13;
-
+    private final static int StackOverflow = -14;
+    private final static int StackUnderflow = -15;
 
 
     public static void main(String[] args) throws Exception{
+
         // Initialize all components to 0
         InitializeSystem();
 
-        //Dump memory after loading user program: Range 0 to 99 locations
-        DumpMemory("Memory after initializing", 0, 99);
-
-        // Prompt user for filename
+        // Prompt user for filename of executable
         Scanner in = new Scanner(System.in);
         System.out.println("Enter the filename of machine language executable");
         String machineFile = in.nextLine();
@@ -55,8 +62,11 @@ public class Hw1 {
         if (returnValue < 0){
             System.out.println("There was an error loading file, returning error");
         }
-
+        // Set program counter to return value
         PC = returnValue;
+
+        // Dump memory after loading the program
+        DumpMemory("Memory after loading the program", 0, 99);
 
         // Execute the program and check for error
         long ExecutionCompletionStatus = CPU();
@@ -67,28 +77,28 @@ public class Hw1 {
         //Dump memory after executing user program: Range 0 to 99 locations
         DumpMemory("Memory after Executing program", 0, 99);
 
+    } // End of main()
 
-
-    } // End of main
-
+    // Function that sets all global system hardware components to 0
     private static void InitializeSystem(){
-        //(1)
+
+        // Set all elements of HypoMem array to 0 (10000)
         for(int i =0 ; i < HypoMem.length; i++){
             HypoMem[i] = 0;
         }
 
-        //(2)
+        // Hypo Memory registers
         MAR = 0;
         MBR = 0;
-        //(3)
+
         clock = 0;
 
-        //(4)
+        // CPU registers: an array of 8 General Purpose Registers
         for ( int j = 0; j < GPR.length; j++){
             GPR[j] = 0;
         }
 
-        //(5)
+        // CPU registers
         IR = 0;
         PSR = 0;
         PC = 0;
@@ -96,11 +106,16 @@ public class Hw1 {
 
     } // End of InitializeSystem()
 
+    // Function that opens the file containing the HYPO machine user program and
+    // loads the content into HYPO memory. On successful load, return the PC value
+    // in the End of Program line. On failure, display appropriate error message
+    // and return appropriate error code.
     private static int AbsoluteLoader(String filename) throws Exception {
 
         int Address;
         int Content;
 
+        // Open the given file and check to make sure it exists
         File file = new File(filename);
         if (!file.exists()) {
             System.out.println("File does not exist");
@@ -109,15 +124,21 @@ public class Hw1 {
 
         Scanner in = new Scanner(file);
 
+        // While there is a next line, read first int to the Address
+        // and the next int to the content
         while (in.hasNextLine()) {
             Address = in.nextInt();
             Content = in.nextInt();
+            // If (-1) for the address, display End, close file, and return the content to main
             if (Address == ENDOFPROGRAM) {
                 System.out.println("Reached end of program");
                 in.close();
-                return Content;  // Value to be stored in PC main
+                // Check Content for valid memory range
+                if ( Content > 0 && Content < ValidProgramArea)
+                    return Content;  // Value to be stored in PC main
             }
-            else if (Address >= 0 && Address < MaxMemory) {
+            // If the address is in the valid range, store the content to the location in main memory
+            else if (Address >= 0 && Address < ValidProgramArea) {
                 HypoMem[Address] = Content;
             }
             else {
@@ -126,11 +147,21 @@ public class Hw1 {
                 return InvalidAddrRange;
             }
         } //end of while loop
+
+        // Return an error to show that end of file was reached without End of Program notifier (-1)
         System.out.println("End of file encountered without End of Program line");
         in.close();
         return NoEndProgError;
     } //End of Absolute Loader
 
+    // CPU function to fetch the first word of the instruction pointed by PC into MBR.
+    // Instruction needing more words (2/3) are fetched based on instruction code.
+    // The decode cycle is used to retrieve the five fields in any instruction depending on
+    // opcode, operand mode, and operand GPR. After decoding, the execute cycle fetches operand
+    // values based on the opcode. For each opcode the appropriate operand addresses and values
+    // are returned and corresponding operations are performed for add, subtract, move, etc.
+    // The result of the operation is stored in main memory and the clock is increased by the
+    // instruction execution time.
     private static long CPU(){
         long Opcode, Remainder, Op1Mode, Op1Gpr, Op2Mode, Op2Gpr;
         long Returned[] = new long[3];
@@ -142,7 +173,8 @@ public class Hw1 {
         int OpAddr = 1;
         int OpVal = 2;
 
-
+        int ImmediateMode = 6;
+        int RegisterMode = 1;
         while ( !halt && !error){
             if (PC >= 0 && PC <= ValidProgramArea){
                 MAR = PC++;
@@ -192,9 +224,10 @@ public class Hw1 {
                 case 0: //HALT
                     halt = true;
                     System.out.println("Halt instruction was encountered.");
+
+                    // Increase clock by halt execution time
                     clock = clock + 12;
                     break;
-
 
                 case 1: //ADD
                     Returned = FetchOperand(Op1Mode, Op1Gpr);
@@ -202,6 +235,8 @@ public class Hw1 {
                     if ( Returned[err] < 0){
                         return Returned[err];
                     }
+
+                    // Set OpAddrs and OpValues from fetched operands
                     Op1Address = Returned[OpAddr];
                     Op1Value = Returned[OpVal];
 
@@ -215,19 +250,21 @@ public class Hw1 {
                     // Add the operand values
                     Result = Op1Value + Op2Value;
 
-                    // If OpMode is Register mode
-                    if ( Op1Mode == 1 ){
+                    // If OpMode is Register mode, store result in Op1 location
+                    if ( Op1Mode == RegisterMode ){
                         GPR[(int)Op1Gpr] = Result;
                     }
-
-                    else if ( Op1Mode == 6 ){
+                    // If OpMode is Immediate mode, return error
+                    else if ( Op1Mode == ImmediateMode ){
                         System.out.println("ERROR: Destination operand cannot be immediate value");
                         return InvalidImmediateMode;
                     }
+                    // Store the result in main memory
                     else{
                         HypoMem[(int)Op1Address] = Result;
                     }
 
+                    // Increase clock by instruction execution time
                     clock = clock + 4;
                     break;
 
@@ -237,6 +274,7 @@ public class Hw1 {
                     if ( Returned[err] < 0){
                         return Returned[err];
                     }
+                    // Set OpAddrs and OpValues from fetched operands
                     Op1Address = Returned[OpAddr];
                     Op1Value = Returned[OpVal];
 
@@ -250,19 +288,21 @@ public class Hw1 {
                     // Subtract the operand values
                     Result = Op1Value - Op2Value;
 
-                    // If OpMode is Register mode
-                    if ( Op1Mode == 1 ){
+                    // If OpMode is Register mode, store result in Op1 location
+                    if ( Op1Mode == RegisterMode ){
                         GPR[(int)Op1Gpr] = Result;
                     }
-
-                    else if ( Op1Mode == 6 ){
+                    // If OpMode is Immediate mode, return error
+                    else if ( Op1Mode == ImmediateMode ){
                         System.out.println("ERROR: Destination operand cannot be immediate value");
                         return InvalidImmediateMode;
                     }
+                    // Store the result in main memory
                     else{
                         HypoMem[(int)Op1Address] = Result;
                     }
 
+                    // Increase clock by instruction execution time
                     clock = clock + 4;
                     break;
 
@@ -272,6 +312,8 @@ public class Hw1 {
                     if ( Returned[err] < 0){
                         return Returned[err];
                     }
+
+                    // Set OpAddrs and OpValues from fetched operands
                     Op1Address = Returned[OpAddr];
                     Op1Value = Returned[OpVal];
 
@@ -285,19 +327,21 @@ public class Hw1 {
                     // Multiply the operand values
                     Result = Op1Value * Op2Value;
 
-                    // If OpMode is Register mode
-                    if ( Op1Mode == 1 ){
+                    // If OpMode is Register mode, store result in Op1 location
+                    if ( Op1Mode == RegisterMode ){
                         GPR[(int)Op1Gpr] = Result;
                     }
-
-                    else if ( Op1Mode == 6 ){
+                    // If OpMode is Immediate mode, return error
+                    else if ( Op1Mode == ImmediateMode ){
                         System.out.println("ERROR: Destination operand cannot be immediate value");
                         return InvalidImmediateMode;
                     }
+                    // Store the result in main memory
                     else{
                         HypoMem[(int)Op1Address] = Result;
                     }
 
+                    // Increase the clock by instruction execution time
                     clock = clock + 6;
                     break;
 
@@ -307,6 +351,8 @@ public class Hw1 {
                     if ( Returned[err] < 0){
                         return Returned[err];
                     }
+
+                    // Set OpAddrs and OpValues from fetched operands
                     Op1Address = Returned[OpAddr];
                     Op1Value = Returned[OpVal];
 
@@ -325,19 +371,21 @@ public class Hw1 {
                     // Divide the operand values
                     Result = Op1Value / Op2Value;
 
-                    // If OpMode is Register mode
-                    if ( Op1Mode == 1 ){
+                    // If OpMode is Register mode, store result in Op1 location
+                    if ( Op1Mode == RegisterMode ){
                         GPR[(int)Op1Gpr] = Result;
                     }
-
-                    else if ( Op1Mode == 6 ){
+                    // If OpMode is Immediate mode, return error
+                    else if ( Op1Mode == ImmediateMode ){
                         System.out.println("ERROR: Destination operand cannot be immediate value");
                         return InvalidImmediateMode;
                     }
+                    // Store the result in main memory
                     else{
                         HypoMem[(int)Op1Address] = Result;
                     }
 
+                    // Increase clock by instruction execution time
                     clock = clock + 6;
                     break;
 
@@ -347,6 +395,7 @@ public class Hw1 {
                     if ( Returned[err] < 0){
                         return Returned[err];
                     }
+                    // Set OpAddrs and OpValues from fetched operands
                     Op1Address = Returned[OpAddr];
                     Op1Value = Returned[OpVal];
 
@@ -357,32 +406,37 @@ public class Hw1 {
                     Op2Address = Returned[OpAddr];
                     Op2Value = Returned[OpVal];
 
-                    // Add the operand values
+                    // Set the result to the operand value
                     Result = Op2Value;
 
-                    // If OpMode is Register mode
-                    if ( Op1Mode == 1 ){
+                    // If OpMode is Register mode, store result in Op1 location
+                    if ( Op1Mode == RegisterMode ){
                         GPR[(int)Op1Gpr] = Result;
                     }
-
-                    else if ( Op1Mode == 6 ){
+                    // If OpMode is Immediate mode, return error
+                    else if ( Op1Mode == ImmediateMode ){
                         System.out.println("ERROR: Destination operand cannot be immediate value");
                         return InvalidImmediateMode;
                     }
+                    // Store the result in main memory
                     else{
                         HypoMem[(int)Op1Address] = Result;
                     }
 
+                    // Increase the clock by instruction execution time
                     clock = clock + 2;
                     break;
 
                 case 6: //BRANCH
+                    // Check if PC is in valid range and set PC
                     if ( PC >= 0 && PC <= ValidProgramArea)
                         PC = HypoMem[(int)PC];
                     else {
                         System.out.println("Error: Invalid PC range found");
                         return InvalidPCValue;
                     }
+
+                    // Increase clock by instruction execution time
                     clock = clock + 2;
                     break;
 
@@ -392,11 +446,13 @@ public class Hw1 {
                     if ( Returned[err] < 0){
                         return Returned[err];
                     }
+                    // Set OpAddr and OpValue from fetched operand
                     Op1Address = Returned[OpAddr];
                     Op1Value = Returned[OpVal];
 
-
+                    // If < 0, BrOnMinus is executed
                     if (Op1Value < 0){
+                        // Check valid PC area and set PC
                         if ( PC >= 0 && PC <= ValidProgramArea)
                             PC = HypoMem[(int)PC];
                         else {
@@ -404,10 +460,12 @@ public class Hw1 {
                             return InvalidPCValue;
                         }
                     }
+                    // Skip branch address to go to next instruction
                     else{
-                        PC++; // Skip branch address to go to next instruction
+                        PC++;
                     }
 
+                    // Increase clock by instruction execution time
                     clock = clock + 4;
                     break;
 
@@ -417,10 +475,14 @@ public class Hw1 {
                     if ( Returned[err] < 0){
                         return Returned[err];
                     }
+
+                    // Set OpAddr and OpValue from fetched operand
                     Op1Address = Returned[OpAddr];
                     Op1Value = Returned[OpVal];
 
+                    // If > 0, BrOnPlus is executed
                     if (Op1Value > 0){
+                        // Check for valid PC area and set PC
                         if ( PC >= 0 && PC <= ValidProgramArea)
                             PC = HypoMem[(int)PC];
                         else {
@@ -428,10 +490,12 @@ public class Hw1 {
                             return InvalidPCValue;
                         }
                     }
+                    // Skip branch address to go to next instruction
                     else{
-                        PC++; // Skip branch address to go to next instruction
+                        PC++;
                     }
 
+                    // Increase clock by instruction execution time
                     clock = clock + 4;
                     break;
 
@@ -441,10 +505,13 @@ public class Hw1 {
                     if ( Returned[err] < 0){
                         return Returned[err];
                     }
+                    // Set OpAddr and OpValue from fetched operand
                     Op1Address = Returned[OpAddr];
                     Op1Value = Returned[OpVal];
 
+                    // If == 0, BrOnZero is executed
                     if (Op1Value == 0){
+                        // Check for valid PC range and set PC
                         if ( PC >= 0 && PC <= ValidProgramArea)
                             PC = HypoMem[(int)PC];
                         else {
@@ -452,20 +519,89 @@ public class Hw1 {
                             return InvalidPCValue;
                         }
                     }
+                    // Skip branch address to go to next instruction
                     else{
-                        PC++; // Skip branch address to go to next instruction
+                        PC++;
                     }
 
+                    // Increase clock by instruction execution time
                     clock = clock + 4;
                     break;
 
                 case 10: // PUSH
+                    Returned = FetchOperand(Op1Mode, Op1Gpr);
+                    // check for error and return error code
+                    if ( Returned[err] < 0){
+                        return Returned[err];
+                    }
+                    // Set OpAddr and OpValue from fetched operand
+                    Op1Address = Returned[OpAddr];
+                    Op1Value = Returned[OpVal];
+
+                    // Check if stack is full, return overflow
+                    if (SP == StackEndAddr){
+                        System.out.println("ERROR: Stack is full, stack overflow");
+                        return StackOverflow;
+                    }
+
+                    // Else push Op1Value on stack pointed by SP
+                    else{
+                        SP++;
+                        HypoMem[(int)SP] = Op1Value;
+                    }
+
+                    // Increment clock by execution time
+                    clock = clock + 2;
                     break;
 
                 case 11: // POP
+                    Returned = FetchOperand(Op1Mode, Op1Gpr);
+                    // check for error and return error code
+                    if ( Returned[err] < 0){
+                        return Returned[err];
+                    }
+                    // Set OpAddr and OpValue from fetched operand
+                    Op1Address = Returned[OpAddr];
+                    Op1Value = Returned[OpVal];
+
+                    //Check if SP is outside stack limit and return stack underflow error code
+                    if ( SP < StackStartAddr){
+                        System.out.println("ERROR: Stack is outside stack limit, stack underflow");
+                        return StackUnderflow;
+                    }
+                    // Pop value off stack and store at Op1Address and decrement SP by 1
+                    else{
+                        Op1Address = HypoMem[(int)SP--];
+                    }
+
+                    // Increment clock by execution time
+                    clock = clock + 2;
                     break;
 
                 case 12: // SYSTEM CALL
+                    // Check if PC is outside the valid range
+                    if ( PC < 0 || PC > ValidProgramArea){
+                        System.out.println("ERROR: Invalid PC range");
+                        return InvalidPCValue;
+                    }
+
+                    Returned = FetchOperand(Op1Mode, Op1Gpr);
+                    // check for error and return error code
+                    if ( Returned[err] < 0){
+                        return Returned[err];
+                    }
+
+                    // Set OpAddr and OpValue from fetched operand
+                    Op1Address = Returned[OpAddr];
+                    Op1Value = Returned[OpVal];
+
+                    // Next word has system call ID, Implement in HW2
+                    // systemCallID = HypoMem[(int)PC++];
+                    // Call SystemCall to process it
+                    // status = SystemCall(Op1Value);
+
+                    // Increment clock by execution time
+                    clock = clock + 12;
                     break;
 
                 default: //INVALID OPCODE
@@ -477,6 +613,11 @@ public class Hw1 {
         return OK;
     } // End of CPU()
 
+
+    // Fetch function that gets the operand value based on the operand mode. It will take in the
+    // mode and register and depending on what mode it is the corresponding case will be executed.
+    // The operand address and operand value will be set and returned to CPU() along with the status code
+    // to set the appropriate global hardware components.
     private static long[] FetchOperand(long OpMode, long OpReg){
 
         long returnValue[] = new long[3];
@@ -484,14 +625,17 @@ public class Hw1 {
         int OpAddress = 1;
         int OpValue  =2;
 
+        // Fetch operand value based on the operand mode
         switch ((int)OpMode){
             case 1: //REGISTER MODE
-                returnValue[OpAddress] = -1;
-                returnValue[OpValue] = GPR[(int)OpReg];
+                returnValue[OpAddress] = -1; // set to any negative value
+                returnValue[OpValue] = GPR[(int)OpReg]; // operand value is in the register
                 break;
 
             case 2: //REGISTER DEFERRED MODE
-                returnValue[OpAddress] = GPR[(int)OpReg];
+                returnValue[OpAddress] = GPR[(int)OpReg]; // Op address is in the register
+
+                // Check that Op address is in the valid range and set operand value from memory
                 if ( returnValue[OpAddress] >= 0 && returnValue[OpAddress] <= ValidProgramArea){
                     returnValue[OpValue] = HypoMem[(int)returnValue[OpAddress]];
                 }
@@ -502,7 +646,9 @@ public class Hw1 {
                 break;
 
             case 3: //AUTOINCREMENT MODE
-                returnValue[OpAddress] = GPR[(int)OpReg];
+                returnValue[OpAddress] = GPR[(int)OpReg]; // Op addr in GPR
+
+                // check for valid op address range and get op value from memory
                 if ( returnValue[OpAddress] >= 0 && returnValue[OpAddress] <= ValidProgramArea){
                     returnValue[OpValue] = HypoMem[(int)returnValue[OpAddress]];
                 }
@@ -510,13 +656,18 @@ public class Hw1 {
                     System.out.println("ERROR: Invalid address range. ");
                     returnValue[Error] = InvalidGPRAddr;
                 }
+
+                // Increment register value by 1
                 GPR[(int)OpReg]++;
                 break;
 
             case 4: //AUTO-DECREMENT MODE
+                // Decrement register value by 1
                 --GPR[(int)OpReg];
+                // Op address is in the register
                 returnValue[OpAddress] = GPR[(int)OpReg];
 
+                // Check op address for valid range and get op value from memory
                 if ( returnValue[OpAddress] >= 0 && returnValue[OpAddress] <= ValidProgramArea){
                     returnValue[OpValue] = HypoMem[(int)returnValue[OpAddress]];
                 }
@@ -527,8 +678,10 @@ public class Hw1 {
                 break;
 
             case 5: //DIRECT MODE
+                // Op address is in the instruction pointed by PC
                 returnValue[OpAddress] = HypoMem[(int)PC++];
 
+                // Checck op address for valid range and get op value from memory
                 if ( returnValue[OpAddress] >= 0 && returnValue[OpAddress] <= ValidProgramArea){
                     returnValue[OpValue] = HypoMem[(int)returnValue[OpAddress]];
                 }
@@ -539,9 +692,10 @@ public class Hw1 {
                 break;
 
             case 6: //IMMEDIATE MODE
+                // Check for valid PC range, Op value is in the instruction
                 if (PC >= 0 && PC <= ValidProgramArea){
-                    returnValue[OpAddress] = -1;
-                    returnValue[OpValue] = HypoMem[(int)PC++];
+                    returnValue[OpAddress] = -1; // Any negative number
+                    returnValue[OpValue] = HypoMem[(int)PC++]; // Increment PC after fetching value
                 }
                 else{
                     System.out.println("ERROR: Invalid PC value. ");
@@ -556,18 +710,26 @@ public class Hw1 {
         return returnValue;
     } // End of FetchOperand()
 
+
+    // DumpMemory function displays a string passed in as a parameter. Displays content of
+    // GPRs, SP, PC, PSR, system Clock and content of the specified memory locations in
+    // a given format.
     private static void DumpMemory(String word, long startAddress, long size){
+        // Display given string
         System.out.println(word);
 
+        // On invalid memory address show error
         if ( startAddress < 0 || startAddress > MaxMemory || startAddress+size > MaxMemory)
             System.out.println("ERROR: There was an invalid start address, size, or end address.");
 
         else{
+            // Display header for GPRs
             System.out.print("GPRS:");
             for(int i = 0; i < 10; i++){
                 print("G"+i);
             }
 
+            // Print content of the GPRs and other HW components
             System.out.print("\n\t");
             for(int i = 0; i < 8; i++){
                 print(Long.toString(GPR[i]));
@@ -576,6 +738,7 @@ public class Hw1 {
             print(Long.toString(PC));
             System.out.println();
 
+            // Print header for addressing row
             System.out.print("Address: +0\t\t+1");
             for(int i = 2; i < 10; i++){
                 print("+"+i);
@@ -585,6 +748,8 @@ public class Hw1 {
             long addr = startAddress;
             long endAddr = startAddress+size;
 
+            // Display content of Hypo machine memory locations specified in the parameters
+            // 11 items per line: Address of first value followed by content of 10 locations
             while(addr < endAddr){
                 System.out.print(addr+"\t");
                 for ( int i = 0; i < 10; i++){
@@ -602,7 +767,9 @@ public class Hw1 {
         }
     } //End of DumpMemory()
 
-    public static void print(String out){
+    // Helper function for formatting output grid
+    // Pads a given string to 7 spaces and prints
+    private static void print(String out){
         String formatted = String.format("%7s", out);
         System.out.print(formatted);
     }
