@@ -6,8 +6,7 @@ HW1
 2/11/20
  */
 
-//TODO: Documentation
-//Valid Memory Area
+
 import java.io.File;
 import java.util.Scanner;
 
