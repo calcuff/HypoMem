@@ -4,6 +4,25 @@ Operating System Internals
 Prof Krishnamoorthy
 HW1
 2/11/20
+
+This program implements a simulator for a hypothetical decimal
+machine in a high-level language. Simulated hardware components are
+declared globally and different memory locations are able to be addressed
+by index. The simulator will read a machine language program from disk
+and load it into appropriate locations in main memory. Each line in the
+executable machine language program must contains two numbers. The first
+field is the address of a memory location and the second is one word of
+the machine language instruction or the value of a variable specified in
+the program. This simulator will initialize all simulated hardware
+components to zero, then prompt a user to supply the name of their
+machine language executable program. The program will then use this file
+to load it into the Hypo main memory and the appropriate Program Counter will
+be returned from the Loader function. The program will call the CPU
+function to execute the program that was just loaded into the Hypo main
+memory. The simulator will also DumpMemory of the Hypo main memory after
+first loading the executable file and after executing the loaded program.
+The main function checks the function return value from each function and
+takes appropriate action.
  */
 
 
@@ -45,7 +64,7 @@ public class Hw1 {
     private final static int StackOverflow = -14;
     private final static int StackUnderflow = -15;
 
-
+    // Driver method instantiated for testing
     public static void main(String[] args) throws Exception{
 
         // Initialize all components to 0
@@ -77,6 +96,7 @@ public class Hw1 {
         DumpMemory("Memory after Executing program", 0, 99);
 
     } // End of main()
+
 
     // Function that sets all global system hardware components to 0
     private static void InitializeSystem(){
